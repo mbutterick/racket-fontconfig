@@ -43,11 +43,11 @@
   (time (map path->fontset '("/Library/Fonts" "/Users/MB/Library/Fonts"))))
 
 (define (family->path family-name)
-(when (ormap values fontsets)
-  (define query-pattern (fc-name-parse (string->bytes/utf-8 family-name)))
-  (fc-config-substitute query-pattern 'FcMatchPattern)
-  (fc-default-substitute query-pattern)
-  (define result-pattern (fc-font-set-match fontsets query-pattern))
-  (and result-pattern (fc-pattern-get-string result-pattern #"file" 0))))
+  (when (ormap values fontsets)
+    (define query-pattern (fc-name-parse (string->bytes/utf-8 family-name)))
+    (fc-config-substitute query-pattern 'FcMatchPattern)
+    (fc-default-substitute query-pattern)
+    (define result-pattern (fc-font-set-match fontsets query-pattern))
+    (and result-pattern (bytes->path (fc-pattern-get-string result-pattern #"file" 0)))))
 
 (family->path "Valkyrie T3")
