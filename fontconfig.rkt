@@ -61,6 +61,11 @@
                            fc-result-type-mismatch
                            fc-result-no-id
                            fc-result-out-of-memory)))
+
+(define _FcMatchKind (_enum '(FcMatchPattern
+                              FcMatchFont
+                              FcMatchScan)))
+
 (define _FcLangResult (_enum '(fc-lang-equal = 0
                                              fc-lang-different-country
                                              fc-lang-different-territory
@@ -122,7 +127,6 @@
   [fc-pattern-del                (_fun _FcPattern _bytes -> _bool)]
   [fc-pattern-remove             (_fun _FcPattern _bytes _int -> _bool)]
   [fc-pattern-print              (_fun _FcPattern -> _void)]
-  [fc-default-substitute         (_fun _FcPattern -> _void)]
   [fc-name-parse                 (_fun _bytes -> _FcPattern)]
   [fc-name-unparse               (_fun _FcPattern -> _bytes)]
   [fc-pattern-format             (_fun _FcPattern _bytes -> _string)]
@@ -231,7 +235,7 @@
   [fc-config-create               (_fun -> _FcConfig)]
   [fc-config-reference            (_fun _FcConfig/null -> _void)]
   [fc-config-destroy              (_fun _FcConfig -> _void)]
-  [fc-config-set-current          (_fun _FcConfig -> _bool)]
+  [fc-config-set-current          (_fun _FcConfig -> _bool -> (void))]
   [fc-config-get-current          (_fun -> _FcConfig)]
   [fc-config-upto-date            (_fun _FcConfig/null -> _bool)]
   [fc-config-home                 (_fun -> _path)]
@@ -247,6 +251,11 @@
   [fc-config-set-rescan-interval  (_fun _FcConfig/null _int -> _bool)]
   [fc-config-app-font-add-file    (_fun _FcConfig/null _path -> _bool)]
   [fc-config-app-font-add-dir     (_fun _FcConfig/null _path -> _bool)]
+  [fc-config-substitute           (_fun [_FcConfig/null = (fc-config-get-current)]
+                                        _FcPattern
+                                        _FcMatchKind
+                                        -> _bool)]
+  [fc-default-substitute         (_fun _FcPattern -> _void)]
   [fc-config-app-font-clear       (_fun _FcConfig/null -> _void)]
 
   [fc-name-get-object-type         (_fun _bytes -> _FcObjectType)]
@@ -275,7 +284,8 @@
                                          [_FcStrSet = (fc-str-set-create)]
                                          (_ptr o _FcFileCache)
                                          (_ptr o _FcBlanks)
-                                         _bytes _bool
+                                         _bytes
+                                         [force : _bool = #true]
                                          -> [res : _bool]
                                          -> (and res fs))]
   ;; https://www.freedesktop.org/software/fontconfig/fontconfig-devel/fcdirscan.html
@@ -285,7 +295,8 @@
                                         [_FcStrSet = (fc-str-set-create)]
                                         [_int = 0]
                                         (_ptr o _FcBlanks)
-                                        _bytes _bool
+                                        _bytes
+                                        [force : _bool = #true]
                                         -> [res : _bool]
                                         -> (and res fs))]
   [fc-file-is-dir                  (_fun _bytes -> _bool)]
