@@ -17,15 +17,35 @@
 ;; create a configuration & invoke it
 (fc-config-set-current (fc-config-create))
 
-(define (path->fontset path-string)
-  (define bytepath (string->bytes/utf-8 path-string))
+(define (path->fontset path-or-path-string)
+  (define bytepath (path->bytes (if (string? path-or-path-string)
+                                    (string->path path-or-path-string)
+                                    path-or-path-string)))
   ((cond
      [(fc-file-is-dir bytepath) fc-dir-scan]
      [else fc-file-scan]) bytepath))
 
 ;; next: default font directories per platform
+
+(define font-dirs
+  (case (system-type 'os)
+    [(macosx)
+     ;; https://support.apple.com/en-us/HT201722
+     (list "/System/Library/Fonts"
+           "/Library/Fonts"
+           (expand-user-path "~/Library/Fonts"))]
+    ;; https://wiki.ubuntu.com/Fonts#Manually
+    [(unix) (list "/usr/share/fonts"
+                  "/usr/local/share/fonts"
+                  (expand-user-path "~/.fonts"))]
+    [else ;; windows
+     ;; https://support.microsoft.com/en-us/help/314960/how-to-install-or-remove-a-font-in-windows
+     ;; on my windows 10 VM, the 'sys-dir is C:\\Windows\system32
+     ;; though I'm suspicious that it's always like this
+     (list (build-path (find-system-path 'sys-dir) 'up "fonts"))]))
+
 (define fontsets
-  (time (map path->fontset '("/Library/Fonts" "/Users/MB/Library/Fonts"))))
+  (time (map path->fontset font-dirs)))
 
 (define (font->path family-name #:bold [bold? #f] #:italic [italic? #f])
   (when (ormap values fontsets)
@@ -37,10 +57,10 @@
     (define result-pattern (fc-font-set-match fontsets query-pattern))
     (and result-pattern (bytes->path (fc-pattern-get-string result-pattern #"file" 0)))))
 
-(font->path "Meta Serif OT")
-(font->path "Meta Serif OT" #:italic #t)
-(font->path "Meta Serif OT" #:bold #t)
-(font->path "Meta Serif OT" #:bold #t #:italic #t)
+(font->path "Apple Braille")
+(font->path "Melior LT" #:italic #t)
+(font->path "Melior LT" #:bold #t)
+(font->path "Melior LT" #:bold #t #:italic #t)
 (font->path "Equity Text A")
 (font->path "Equity Text A" #:italic #t)
 (font->path "Equity Text A" #:bold #t)

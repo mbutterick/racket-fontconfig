@@ -1,12 +1,8 @@
-#lang debug racket/base
-
+#lang racket/base
 (require ffi/unsafe
          ffi/unsafe/define
          ffi/unsafe/define/conventions
-
          (for-syntax racket/base
-                     racket/string
-                     racket/syntax
                      syntax/parse))
 
 ;; header file
@@ -18,7 +14,7 @@
 ;; racket-installed fontconfig
 (define fc-lib (ffi-lib "libfontconfig" '("1" #f)))
 
-;; system fontconfig
+;; system fontconfig (for opportunistic testing. Not necessarily available)
 #;(define fc-lib (ffi-lib "libfontconfig"))
 
 (define-ffi-definer define-fc fc-lib
