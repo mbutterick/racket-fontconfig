@@ -246,7 +246,7 @@
   [fc-config-get-config-files     (_fun _FcConfig/null -> _FcStrList)]
   [fc-config-get-cache-dirs       (_fun _FcConfig/null -> _FcStrList)]
   [fc-config-get-fonts            (_fun _FcConfig/null _FcSetName -> _FcFontSet/null)]
-  [fc-config-get-blanks           (_fun _FcConfig/null -> _FcBlanks)]
+  [fc-config-get-blanks           (_fun _FcConfig/null -> _FcBlanks/null)]
   [fc-config-get-rescan-interval  (_fun _FcConfig/null -> _int)]
   [fc-config-set-rescan-interval  (_fun _FcConfig/null _int -> _bool)]
   [fc-config-app-font-add-file    (_fun _FcConfig/null _path -> _bool)]
@@ -266,7 +266,7 @@
                                          -> [b : _bool]
                                          -> (values b res))]
 
-  [fc-blanks-create                (_fun -> _FcBlanks)]
+  [fc-blanks-create                (_fun -> _FcBlanks/null)]
   [fc-blanks-destroy               (_fun _FcBlanks -> _void)]
   [fc-blanks-add                   (_fun _FcBlanks _int -> _bool)]
   [fc-blanks-is-member             (_fun _FcBlanks _int -> _bool)]
@@ -283,7 +283,7 @@
   [fc-file-scan                    (_fun [fs : _FcFontSet = (fc-font-set-create)]
                                          [_FcStrSet = (fc-str-set-create)]
                                          (_ptr o _FcFileCache)
-                                         (_ptr o _FcBlanks)
+                                         (_ptr o _FcBlanks/null)
                                          _bytes
                                          [force : _bool = #true]
                                          -> [res : _bool]
@@ -294,7 +294,7 @@
   [fc-dir-scan                    (_fun [fs : _FcFontSet = (fc-font-set-create)]
                                         [_FcStrSet = (fc-str-set-create)]
                                         [_int = 0]
-                                        (_ptr o _FcBlanks)
+                                        (_ptr o _FcBlanks/null)
                                         _bytes
                                         [force : _bool = #true]
                                         -> [res : _bool]
