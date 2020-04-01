@@ -1,4 +1,4 @@
-#lang racket
+#lang debug racket
 
 (require fontconfig
          rackunit)
@@ -39,15 +39,28 @@
      [(fc-file-is-dir bytepath) fc-dir-scan]
      [else fc-file-scan]) bytepath))
 
+;; todo: default font directories per platform
 (define fontsets
   (time (map path->fontset '("/Library/Fonts" "/Users/MB/Library/Fonts"))))
 
-(define (family->path family-name)
+(define (font->path family-name #:bold [bold? #f] #:italic [italic? #f])
   (when (ormap values fontsets)
-    (define query-pattern (fc-name-parse (string->bytes/utf-8 family-name)))
+    ;; query pattern syntax
+    ;; https://www.freedesktop.org/software/fontconfig/fontconfig-user.html#AEN36
+    (define query-pattern (fc-name-parse (string->bytes/utf-8 (format "~a:weight=~a:slant=~a" family-name (if bold? 200 80) (if italic? 100 0)))))
     (fc-config-substitute query-pattern 'FcMatchPattern)
     (fc-default-substitute query-pattern)
     (define result-pattern (fc-font-set-match fontsets query-pattern))
     (and result-pattern (bytes->path (fc-pattern-get-string result-pattern #"file" 0)))))
 
-(family->path "Valkyrie T3")
+;; next: how to incl bold / italic in query pattern
+
+
+(font->path "Meta Serif OT")
+(font->path "Meta Serif OT" #:italic #t)
+(font->path "Meta Serif OT" #:bold #t)
+(font->path "Meta Serif OT" #:bold #t #:italic #t)
+(font->path "Equity Text A")
+(font->path "Equity Text A" #:italic #t)
+(font->path "Equity Text A" #:bold #t)
+(font->path "Equity Text A" #:italic #t #:bold #t)

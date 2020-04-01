@@ -127,7 +127,7 @@
   [fc-pattern-del                (_fun _FcPattern _bytes -> _bool)]
   [fc-pattern-remove             (_fun _FcPattern _bytes _int -> _bool)]
   [fc-pattern-print              (_fun _FcPattern -> _void)]
-  [fc-name-parse                 (_fun _bytes -> _FcPattern)]
+  [fc-name-parse                 (_fun _bytes -> _FcPattern/null)]
   [fc-name-unparse               (_fun _FcPattern -> _bytes)]
   [fc-pattern-format             (_fun _FcPattern _bytes -> _string)]
 
