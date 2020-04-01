@@ -68,11 +68,16 @@
 
 (define-cstruct _FcMatrix ([xx _double] [xy _double]
                                         [yx _double] [yy _double]))
+
+(define _FcValue-union (_union _bytes
+                               _int
+                               _bool
+                               _double
+                               _FcMatrix-pointer
+                               _FcCharSet
+                               _FcLangSet))
 (define-cstruct _FcValue ([type _FcType]
-                          [u (_union _bytes _int _bool _double
-                                     _FcMatrix-pointer
-                                     _FcCharSet
-                                     _FcLangSet)]))
+                          [u _FcValue-union]))
 
 
 (define-syntax (define-fc-functions stx)
@@ -100,7 +105,18 @@
   [fc-pattern-hash               (_fun _FcPattern -> _int32)]
   [fc-pattern-add                (_fun _FcPattern _bytes _FcValue _bool -> _bool)]
   [fc-pattern-add-weak           (_fun _FcPattern _bytes _FcValue _bool -> _bool)]
-  [fc-pattern-get                (_fun _FcPattern _bytes _int [val : (_ptr o _FcValue)] -> _FcResult -> val)]
+  [fc-pattern-get                (_fun _FcPattern
+                                       _bytes
+                                       _int
+                                       [val : (_ptr o _FcValue)]
+                                       -> _FcResult
+                                       -> val)]
+  [fc-pattern-get-string          (_fun _FcPattern
+                                        _bytes
+                                        _int
+                                        [val : (_ptr o _bytes)]
+                                        -> _FcResult
+                                        -> val)]
   ;; TODO: vararg
   ;fc-pattern-build
   [fc-pattern-del                (_fun _FcPattern _bytes -> _bool)]
@@ -121,7 +137,7 @@
                                        _FcObjectSet
                                        ->
                                        _FcFontSet)]
-  [fc-font-set-match             (_fun _FcConfig/null
+  [fc-font-set-match             (_fun [_FcConfig/null = (fc-config-get-current)]
                                        [set : (_list i _FcFontSet)]
                                        [_int = (length set)]
                                        _FcPattern
@@ -129,7 +145,7 @@
                                        ->
                                        [pat : _FcPattern]
                                        ->
-                                       (values res pat))]
+                                       (and (eq? res 'fc-result-match) pat))]
   [fc-font-set-print             (_fun _FcFontSet -> _void)]
   [fc-font-set-sort              (_fun _FcConfig/null
                                        [set : (_list i _FcFontSet)]
@@ -255,16 +271,24 @@
   [fc-atomic-unlock                (_fun _FcAtomic -> _void)]
   [fc-atomic-destroy               (_fun _FcAtomic -> _void)]
 
-  [fc-file-scan                    (_fun _FcFontSet _FcStrSet
+  [fc-file-scan                    (_fun [fs : _FcFontSet = (fc-font-set-create)]
+                                         [_FcStrSet = (fc-str-set-create)]
                                          (_ptr o _FcFileCache)
                                          (_ptr o _FcBlanks)
                                          _bytes _bool
-                                         -> _bool)]
+                                         -> [res : _bool]
+                                         -> (and res fs))]
+  ;; https://www.freedesktop.org/software/fontconfig/fontconfig-devel/fcdirscan.html
+  ;; "If cache is not zero or if force is FcFalse, this function currently returns FcFalse."
+  ;; therefore always pass 0 for cache argument
+  [fc-dir-scan                    (_fun [fs : _FcFontSet = (fc-font-set-create)]
+                                        [_FcStrSet = (fc-str-set-create)]
+                                        [_int = 0]
+                                        (_ptr o _FcBlanks)
+                                        _bytes _bool
+                                        -> [res : _bool]
+                                        -> (and res fs))]
   [fc-file-is-dir                  (_fun _bytes -> _bool)]
-  [fc-dir-scan                     (_fun _FcFontSet _FcStrSet
-                                         _FcFileCache _FcBlanks
-                                         _bytes _bool
-                                         -> _bool)]
   [fc-dir-cache-unlink             (_fun _bytes _FcConfig -> _bool)]
   [fc-dir-cache-valid              (_fun _bytes -> _bool)]
   [fc-dir-cache-load               (_fun _bytes _FcConfig
@@ -304,49 +328,3 @@
   (set-FcMatrix-yy! 1)
   (set-FcMatrix-xy! 0)
   (set-FcMatrix-yx! 0))
-
-;; todo
-;; + how to export FcValue-type
-;; + call config substitute & default substitute before match
-
-;; earlier considerations
-;; https://github.com/racket/racket/issues/1348
-
-;; following c sample
-;; https://gist.github.com/CallumDev/7c66b3f9cf7a876ef75f
-
-;; this sample works on a machine that has a system-level fontconfig
-#;(begin
-(define pat (fc-name-parse #"Valkyrie T4"))
-#;(fc-pattern-print pat)
-(define cfg (fc-config-get-current))
-(define font-set (fc-config-get-fonts cfg 'fc-set-system))
-(define-values (res fontpat) (fc-font-set-match cfg (list font-set) pat))
-(when (eq? res 'fc-result-match)
-  (define val (fc-pattern-get fontpat #"file" 0))
-  (when (eq? (FcValue-type val) 'fc-type-bytes)
-    (union-ref (FcValue-u val) 0))))
-
-;; this sample is for a racket-provided fontconfig
-(define font-set (fc-font-set-create))
-(define string-set (fc-str-set-create))
-
-"(fc-font-set-print font-set) 1"
-(fc-font-set-print font-set)
-"create config"
-(define cfg (fc-config-create))
-"set config"
-(fc-config-set-current cfg)
-
-"file-scan"
-(fc-file-scan font-set string-set #"charter.otf" #t)
-
-"(fc-font-set-print font-set) 2"
-(fc-font-set-print font-set)
-
-(define pat (fc-name-parse #"Charter"))
-(define-values (res fontpat) (fc-font-set-match cfg (list font-set) pat))
-(when (eq? res 'fc-result-match)
-  (define val (fc-pattern-get fontpat #"file" 0))
-  (when (eq? (FcValue-type val) 'fc-type-bytes)
-    (union-ref (FcValue-u val) 0)))
