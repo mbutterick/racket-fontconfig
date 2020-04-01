@@ -12,11 +12,14 @@
 ;; header file
 ;; https://github.com/servo/libfontconfig/blob/master/fontconfig/fontconfig.h 
 
+;; fontconfig docs
+;; https://www.freedesktop.org/software/fontconfig/fontconfig-devel/x102.html
+
 ;; racket-installed fontconfig
-#;(define fc-lib (ffi-lib "libfontconfig" '("1" #f)))
+(define fc-lib (ffi-lib "libfontconfig" '("1" #f)))
 
 ;; system fontconfig
-(define fc-lib (ffi-lib "libfontconfig"))
+#;(define fc-lib (ffi-lib "libfontconfig"))
 
 (define-ffi-definer define-fc fc-lib
   #:make-c-id convention:hyphen->camelcase
@@ -253,7 +256,8 @@
   [fc-atomic-destroy               (_fun _FcAtomic -> _void)]
 
   [fc-file-scan                    (_fun _FcFontSet _FcStrSet
-                                         _FcFileCache _FcBlanks
+                                         (_ptr o _FcFileCache)
+                                         (_ptr o _FcBlanks)
                                          _bytes _bool
                                          -> _bool)]
   [fc-file-is-dir                  (_fun _bytes -> _bool)]
@@ -305,14 +309,42 @@
 ;; + how to export FcValue-type
 ;; + call config substitute & default substitute before match
 
+;; earlier considerations
+;; https://github.com/racket/racket/issues/1348
 
 ;; following c sample
 ;; https://gist.github.com/CallumDev/7c66b3f9cf7a876ef75f
 
+;; this sample works on a machine that has a system-level fontconfig
+#;(begin
 (define pat (fc-name-parse #"Valkyrie T4"))
 #;(fc-pattern-print pat)
 (define cfg (fc-config-get-current))
 (define font-set (fc-config-get-fonts cfg 'fc-set-system))
+(define-values (res fontpat) (fc-font-set-match cfg (list font-set) pat))
+(when (eq? res 'fc-result-match)
+  (define val (fc-pattern-get fontpat #"file" 0))
+  (when (eq? (FcValue-type val) 'fc-type-bytes)
+    (union-ref (FcValue-u val) 0))))
+
+;; this sample is for a racket-provided fontconfig
+(define font-set (fc-font-set-create))
+(define string-set (fc-str-set-create))
+
+"(fc-font-set-print font-set) 1"
+(fc-font-set-print font-set)
+"create config"
+(define cfg (fc-config-create))
+"set config"
+(fc-config-set-current cfg)
+
+"file-scan"
+(fc-file-scan font-set string-set #"charter.otf" #t)
+
+"(fc-font-set-print font-set) 2"
+(fc-font-set-print font-set)
+
+(define pat (fc-name-parse #"Charter"))
 (define-values (res fontpat) (fc-font-set-match cfg (list font-set) pat))
 (when (eq? res 'fc-result-match)
   (define val (fc-pattern-get fontpat #"file" 0))
